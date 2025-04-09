@@ -146,7 +146,8 @@
                     timeout: 10000, // 增加超時時間
                     reconnection: true,
                     reconnectionDelay: 1000,
-                    reconnectionAttempts: 5
+                    reconnectionAttempts: 5,
+                    secure: true
                 });
 
                 socket.on('connect', function() {
