@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 import re
+import time
 
 class VideoProcessor:
     """
@@ -21,17 +22,23 @@ class VideoProcessor:
         self.latest_histogram = None
         self.is_processing = False  # 增加一個標記，表示目前是否正在處理影格
         self.skip_count = 0  # 記錄略過的影格數量
+        self.last_activity = time.time()  # 記錄最後活動時間
     
     def enable_processing(self):
         self.processing_enabled = True
+        self.last_activity = time.time()
     
     def disable_processing(self):
         self.processing_enabled = False
+        self.last_activity = time.time()
     
     def process_frame(self, frame_data):
         """
         處理從前端傳來的視訊畫面，增加略過機制避免負載過高
         """
+        # 更新最後活動時間
+        self.last_activity = time.time()
+        
         # 如果當前正在處理影格，則略過這一幀
         if self.is_processing:
             self.skip_count += 1

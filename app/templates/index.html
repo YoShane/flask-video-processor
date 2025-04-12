@@ -200,6 +200,15 @@
             let frameRate = 10; // 設定目標每秒幀數 (FPS)
             let frameInterval = 1000 / frameRate; // 計算每幀間隔時間
             let waitingForResponse = false;
+            let clientSid = null;
+
+            // 產生唯一客戶端ID
+            function generateClientId() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            }
 
             // 連接 WebSocket
             function connectSocket() {
@@ -215,6 +224,8 @@
                 socket.on('connect', function() {
                     $('#connectionStatus').text('已連接').removeClass('disconnected').addClass('connected');
                     console.log('已連接到伺服器');
+                    clientSid = socket.id;
+                    console.log('客戶端ID:', clientSid);
                 });
 
                 socket.on('disconnect', function() {
@@ -376,6 +387,7 @@
                     url: '/start_processing',
                     type: 'POST',
                     contentType: 'application/json',
+                    data: JSON.stringify({ sid: clientSid }),
                     success: function(data) {
                         isProcessing = true;
                         $('#status')
@@ -410,6 +422,7 @@
                     url: '/stop_processing',
                     type: 'POST',
                     contentType: 'application/json',
+                    data: JSON.stringify({ sid: clientSid }),
                     success: function(data) {
                         isProcessing = false;
                         $('#status')
