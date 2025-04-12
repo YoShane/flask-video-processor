@@ -135,7 +135,7 @@ class VideoProcessor:
 
     def _update_histogram(self):
         """
-        更新直方圖圖像 - 極度簡化版本以提高效率
+        更新直方圖圖示 - 極度簡化版本以提高效率
         """
         if self.grey_frame is None:
             return

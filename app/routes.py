@@ -8,15 +8,15 @@ import uuid
 import time
 from threading import Timer
 
-# 使用字典存儲每個使用者的視訊處理器和處理數據
+# 使用字典儲存每個使用者的視訊和處理數據
 video_processors = {}
 processing_data = {}
 
-# 清理不活躍的處理器的定時器函數
+# 清理不活躍的處理器定時器函數
 def cleanup_inactive_processors():
     """清理不活躍的處理程序"""
     current_time = time.time()
-    inactive_threshold = 300  # 5分鐘無活動視為不活躍
+    inactive_threshold = 300  # 5分鐘沒有動作視為不活躍
     
     for sid in list(video_processors.keys()):
         processor = video_processors[sid]
@@ -38,7 +38,7 @@ cleanup_timer.start()
 @app.route('/')
 def index():
     """渲染首頁"""
-    # 確保每個用戶有唯一的session ID
+    # 確定每個用戶有唯一的session ID
     if 'client_id' not in session:
         session['client_id'] = str(uuid.uuid4())
     
@@ -60,7 +60,7 @@ def handle_connect():
         'count_values': []
     }
     
-    # 將客戶端加入一個以sid命名的房間
+    # 將使用者端加入一個以sid命名的room
     join_room(sid)
     emit('status', {'status': 'connected'})
 
@@ -80,7 +80,7 @@ def handle_disconnect():
 def handle_frame(data):
     """
     接收並處理前端傳來的視訊畫面
-    data: 包含 base64 編碼的圖片數據
+    data: base64編碼的圖片數據
     """
     sid = request.sid
     
@@ -93,7 +93,7 @@ def handle_frame(data):
             'count_values': []
         }
     
-    # 更新最後活動時間
+    # 更新最後動作時間
     video_processors[sid].last_activity = time.time()
     
     if 'image' in data:
@@ -106,7 +106,7 @@ def handle_frame(data):
         if video_processors[sid].processing_enabled and 'count' in result:
             processing_data[sid]['count_values'].append(result['count'])
             
-        # 只向發送請求的客戶端發送處理結果
+        # 只向發送請求的使用者端發送處理結果
         emit('processed_frame', result, room=sid)
 
 @app.route('/start_processing', methods=['POST'])
@@ -114,11 +114,11 @@ def start_processing():
     """啟動影像處理"""
     sid = request.json.get('sid') if request.json else None
     
-    # 如果沒有提供 sid，則使用 session 中的 client_id
+    # 如果沒有提供sid，則使用session中的client_id
     if not sid:
         sid = session.get('client_id')
     
-    # 確保 sid 存在於處理器字典中
+    # 確定sid存在於伺服器字典中
     if sid not in video_processors:
         video_processors[sid] = VideoProcessor()
         video_processors[sid].last_activity = time.time()
@@ -142,7 +142,7 @@ def stop_processing():
     """停止影像處理"""
     sid = request.json.get('sid') if request.json else None
     
-    # 如果沒有提供 sid，則使用 session 中的 client_id
+    # 如果沒有提供sid，則使用session中的client_id
     if not sid:
         sid = session.get('client_id')
     

@@ -11,7 +11,7 @@ if __name__ == '__main__':
     certfile = 'fullchain.pem'
     keyfile = 'privkey.pem'
 
-    # 設置適當的工作線程數
+    # 設置工作線程數上限
     os.environ['EVENTLET_THREADPOOL_SIZE'] = '30'
 
     # 建立一個 SSL socket
