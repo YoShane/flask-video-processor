@@ -84,6 +84,8 @@
             display: none;
         }
     </style>
+    <!-- 添加 DataTables 相關的 CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
 </head>
 
 <body class="bg-light">
@@ -119,6 +121,62 @@
         </div>
 
         <div id="status" class="status mt-3" style="display: none;"></div>
+    </div>
+
+    <!-- 數據表 -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">處理記錄</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="recordsTable" class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>時間</th>
+                                        <th>圖片</th>
+                                        <th>名稱</th>
+                                        <th>平均數量</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordsBody">
+                                    <!-- 資料將由JavaScript動態載入 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯名稱的Modal -->
+    <div class="modal fade" id="editNameModal" tabindex="-1" role="dialog" aria-labelledby="editNameModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editNameModalLabel">編輯記錄名稱</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editNameForm">
+                        <input type="hidden" id="recordId">
+                        <div class="form-group">
+                            <label for="recordName">名稱</label>
+                            <input type="text" class="form-control" id="recordName" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveNameBtn">儲存</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -365,6 +423,9 @@
 
                         // 隱藏直方圖區域
                         $('#histogramContainer').hide();
+                        
+                        // 重新載入記錄
+                        setTimeout(loadRecords, 500);
                     },
                     error: function(error) {
                         $('#status')
@@ -375,9 +436,160 @@
                     }
                 });
             });
+
+            // 載入記錄
+            function loadRecords() {
+                $.get('/records', function(data) {
+                    let tableBody = $('#recordsBody');
+                    tableBody.empty();
+                    
+                    data.forEach(function(record) {
+                        let row = $('<tr>');
+                        
+                        // 時間
+                        row.append($('<td>').text(record.timestamp));
+                        
+                        // 圖片
+                        let imgCell = $('<td>').addClass('text-center');
+                        if (record.image) {
+                            let img = $('<img>')
+                                .attr('src', 'data:image/jpeg;base64,' + record.image)
+                                .css({
+                                    'max-height': '80px',
+                                    'max-width': '120px',
+                                    'cursor': 'pointer'
+                                })
+                                .on('click', function() {
+                                    // 點擊圖片時放大顯示
+                                    window.open('data:image/jpeg;base64,' + record.image, '_blank');
+                                });
+                            imgCell.append(img);
+                        } else {
+                            imgCell.append('無圖片');
+                        }
+                        row.append(imgCell);
+                        
+                        // 名稱
+                        row.append($('<td>').text(record.name));
+                        
+                        // 平均數量
+                        row.append($('<td>').text(record.avg_count));
+                        
+                        // 操作按鈕
+                        let actionCell = $('<td>');
+                        let editBtn = $('<button>')
+                            .addClass('btn btn-sm btn-primary me-2')
+                            .text('編輯名稱')
+                            .on('click', function() {
+                                // 打開編輯對話框
+                                $('#recordId').val(record.id);
+                                $('#recordName').val(record.name);
+                                $('#editNameModal').modal('show');
+                            });
+                        
+                        let deleteBtn = $('<button>')
+                            .addClass('btn btn-sm btn-danger')
+                            .text('刪除')
+                            .on('click', function() {
+                                if (confirm('確定要刪除此記錄嗎？')) {
+                                    deleteRecord(record.id);
+                                }
+                            });
+                        
+                        actionCell.append(editBtn).append(deleteBtn);
+                        row.append(actionCell);
+                        
+                        tableBody.append(row);
+                    });
+
+                    // 如果DataTable已經初始化，則銷毀它
+                    if ($.fn.dataTable.isDataTable('#recordsTable')) {
+                        $('#recordsTable').DataTable().destroy();
+                    }
+                    
+                    // 重新初始化DataTable
+                    $('#recordsTable').DataTable({
+                        "language": {
+                            "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/Chinese-traditional.json"
+                        },
+                        "pageLength": 10,
+                        "ordering": true,
+                        "responsive": true
+                    });
+                });
+            }
+
+            // 刪除記錄
+            function deleteRecord(id) {
+                $.ajax({
+                    url: '/record/' + id,
+                    type: 'DELETE',
+                    success: function(result) {
+                        loadRecords();
+                        $('#status')
+                            .text('記錄已成功刪除')
+                            .removeClass('error')
+                            .addClass('success')
+                            .show();
+                        setTimeout(function() {
+                            $('#status').fadeOut(500);
+                        }, 3000);
+                    },
+                    error: function(xhr, status, error) {
+                        $('#status')
+                            .text('刪除記錄時發生錯誤')
+                            .removeClass('success')
+                            .addClass('error')
+                            .show();
+                    }
+                });
+            }
+
+            // 儲存編輯的名稱
+            $('#saveNameBtn').click(function() {
+                let id = $('#recordId').val();
+                let name = $('#recordName').val();
+                
+                if (!name) {
+                    alert('請輸入名稱');
+                    return;
+                }
+                
+                $.ajax({
+                    url: '/record/' + id,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ name: name }),
+                    success: function(result) {
+                        $('#editNameModal').modal('hide');
+                        loadRecords();
+                        $('#status')
+                            .text('記錄名稱已更新')
+                            .removeClass('error')
+                            .addClass('success')
+                            .show();
+                        setTimeout(function() {
+                            $('#status').fadeOut(500);
+                        }, 3000);
+                    },
+                    error: function(xhr, status, error) {
+                        $('#status')
+                            .text('更新記錄名稱時發生錯誤')
+                            .removeClass('success')
+                            .addClass('error')
+                            .show();
+                    }
+                });
+            });
+
+            // 初始載入記錄
+            loadRecords();
         });
     </script>
 
+    <!-- 添加 DataTables 相關的 JS -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

@@ -1,4 +1,5 @@
 __pycache__
 *.pem
+*.db
 # Folder view configuration files
 .DS_Store

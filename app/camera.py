@@ -90,7 +90,6 @@ class VideoProcessor:
             # ✅ 顯示數量在畫面上
             cv2.putText(output, f'Count: {n}', (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv2.LINE_AA)
-    
 
             # 降低直方圖更新頻率 - 每5幀更新一次
             if not hasattr(self, 'histogram_update_counter'):
@@ -102,6 +101,7 @@ class VideoProcessor:
                 self.histogram_update_counter = 0
         else:
             histogram_b64 = ""
+            n = 0  # 未處理時數量為0
         
         # 儲存最新處理過的畫面
         self.latest_processed = output
@@ -113,6 +113,7 @@ class VideoProcessor:
         result = {
             "processed_image": processed_b64,
             "processing_enabled": self.processing_enabled,
+            "count": n  # 加入計數到結果中
         }
         
         # 只有當處理啟用時才傳送直方圖和閾值
